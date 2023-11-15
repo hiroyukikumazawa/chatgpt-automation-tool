@@ -8,6 +8,7 @@ from fastapi.security import APIKeyHeader
 
 from utils.helper import BaseData, execute_js_code
 from utils.models import GptRequestModel, GptResultModel
+from utils.txt import fetch_gpt_result, save_gpt_result
 
 description = """
 OpenAI Automation Tool
@@ -69,7 +70,7 @@ def generate_api_key():
 
 
 # Define a dependency to validate the API key
-async def validate_api_key(api_key: str = Depends(get_api_key)):
+def validate_api_key(api_key: str = Depends(get_api_key)):
     """
     Validate the API key provided in the request.
 
@@ -90,7 +91,7 @@ async def validate_api_key(api_key: str = Depends(get_api_key)):
 @app.post(
     "/republish-api-key/", response_model=dict, dependencies=[Depends(validate_api_key)]
 )
-async def republish_api_key():
+def republish_api_key():
     """
     Republish a new API key.
 
@@ -108,7 +109,7 @@ async def republish_api_key():
 
 # Create an endpoint to validate a position using a PositionModel
 @app.post("/gpt35/", dependencies=[Depends(validate_api_key)])
-async def request_gpt35(request_obj: GptRequestModel):
+def request_gpt35(request_obj: GptRequestModel):
     max_timeout = request_obj.max_timeout
     request_text = request_obj.request_text
 
@@ -126,16 +127,13 @@ async def request_gpt35(request_obj: GptRequestModel):
     js_code = js_code.replace("__max_timeout__", f"{max_timeout*1000}")
     execute_js_code(tab, js_code)
     tab.stop()
-    time.sleep(max_timeout + 2)
-    result_file = codecs.open("utils/result.txt")
-    return result_file.read()
+    time.sleep(max_timeout + 5)
+    return fetch_gpt_result()
 
 
 @app.post("/gpt35result/")
-async def result_gpt35(result: GptResultModel):
-    result_file = codecs.open("utils/result.txt", mode="w", encoding="utf-8")
-    result_file.write(result.result_text)
-    result_file.close()
+def result_gpt35(result: GptResultModel):
+    save_gpt_result(result=result.result_text)
     return "success"
 
 

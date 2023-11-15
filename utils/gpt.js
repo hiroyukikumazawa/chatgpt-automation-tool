@@ -24,11 +24,12 @@ async function run() {
     await textarea.dispatchEvent(inputEvent);
     await delay(100);
     await textarea.nextSibling.click();
-    await delay(__max_timeout__);
+    const max_timeout = __max_timeout__;
+    await delay(max_timeout);
     const paste_tags = document.querySelectorAll(".ml-auto");
     const paste_tag = paste_tags[paste_tags.length - 1];
     const resp_text = paste_tag.parentElement.parentElement.parentElement.textContent.trim();
-
+    console.log(resp_text);
     const url = 'http://localhost:7463/gpt35result/';
 
     const headers = {
