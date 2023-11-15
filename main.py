@@ -2,13 +2,14 @@ import codecs
 import secrets
 import time
 
-from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
 from utils.helper import BaseData, execute_js_code
 from utils.models import GptRequestModel, GptResultModel
-from utils.txt import fetch_gpt_result, save_gpt_result
+
+router = APIRouter()
 
 description = """
 OpenAI Automation Tool
@@ -89,7 +90,10 @@ def validate_api_key(api_key: str = Depends(get_api_key)):
 
 # Create an endpoint to republish a new API key
 @app.post(
-    "/republish-api-key/", response_model=dict, dependencies=[Depends(validate_api_key)]
+    "/republish-api-key/",
+    response_model=dict,
+    dependencies=[Depends(validate_api_key)],
+    include_in_schema=False,
 )
 def republish_api_key():
     """
@@ -128,12 +132,12 @@ def request_gpt35(request_obj: GptRequestModel):
     execute_js_code(tab, js_code)
     tab.stop()
     time.sleep(max_timeout + 5)
-    return fetch_gpt_result()
+    return BaseData.result
 
 
-@app.post("/gpt35result/")
+@app.post("/gpt35result/", include_in_schema=False)
 def result_gpt35(result: GptResultModel):
-    save_gpt_result(result=result.result_text)
+    BaseData.result = result.result_text
     return "success"
 
 
