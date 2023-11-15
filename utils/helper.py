@@ -45,3 +45,4 @@ class BaseData:
     last_called_time: float = 0
     valid_api_key: str = os.getenv("API_KEY")
     browser = browser
+    result: str | None = None
