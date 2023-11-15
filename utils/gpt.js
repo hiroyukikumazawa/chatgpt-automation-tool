@@ -46,6 +46,20 @@ async function run() {
         headers: headers,
         body: JSON.stringify(data)
     }).then(response => response.json()).then(data => console.log(data)).catch(error => console.error('Error:', error));
+
+    const avatarElement = document.querySelector(".font-semibold")
+    avatarElement.click();
+    await delay(100)
+    const settings = "Settings";
+    const settingElement = getSpanByContent('a', settings);
+    settingElement.click()
+    await delay(100)
+    const clearElement = getSpanByContent("div", "Clear")
+    clearElement.click()
+    await delay(100)
+    const confirmElement = getSpanByContent("div", "Confirm deletion")
+    confirmElement.click()
+    await delay(100)
     return resp_text;
 }
 
