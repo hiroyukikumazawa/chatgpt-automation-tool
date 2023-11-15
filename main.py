@@ -1,10 +1,13 @@
+import codecs
 import secrets
 import time
 
 from fastapi import Depends, FastAPI, HTTPException, Security
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
 from utils.helper import BaseData, execute_js_code
+from utils.models import GptRequestModel, GptResultModel
 
 description = """
 OpenAI Automation Tool
@@ -26,6 +29,16 @@ app = FastAPI(
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
+)
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -95,23 +108,35 @@ async def republish_api_key():
 
 # Create an endpoint to validate a position using a PositionModel
 @app.post("/gpt35/", dependencies=[Depends(validate_api_key)])
-async def request_gpt35(req_content: str):
-    """
-    Validate a position using the PositionModel.
+async def request_gpt35(request_obj: GptRequestModel):
+    max_timeout = request_obj.max_timeout
+    request_text = request_obj.request_text
 
-    Args:
-        item (PositionModel): The position data to validate.
+    if max_timeout < 5:
+        return "max_timeout must be more than 5"
 
-    Returns:
-        str: A string containing the validated position information.
-    """
-    BaseData.last_called_time = time.time()
+    if BaseData.last_called_time > time.time():
+        return "Not available"
+
+    BaseData.last_called_time = time.time() + max_timeout
     tab = BaseData.browser.list_tab()[-1]
-    print(BaseData.browser.list_tab())
     tab.start()
-    execute_js_code(tab, "console.log('first integratasdfe')")
+    js_code = codecs.open("utils/gpt.js").read()
+    js_code = js_code.replace("__request_text__", request_text)
+    js_code = js_code.replace("__max_timeout__", f"{max_timeout*1000}")
+    execute_js_code(tab, js_code)
     tab.stop()
-    return BaseData.last_called_time
+    time.sleep(max_timeout + 2)
+    result_file = codecs.open("utils/result.txt")
+    return result_file.read()
+
+
+@app.post("/gpt35result/")
+async def result_gpt35(result: GptResultModel):
+    result_file = codecs.open("utils/result.txt", mode="w", encoding="utf-8")
+    result_file.write(result.result_text)
+    result_file.close()
+    return "success"
 
 
 # Run the FastAPI application using uvicorn
